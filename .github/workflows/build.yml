@@ -19,18 +19,9 @@ jobs:
       - name: ServiceNow DevOps Register Artifact
         uses: ServiceNow/servicenow-devops-register-artifact@v5.1.0
         with:
-          # Devops Integration User Name
-          #  devops-integration-user-name: ${{ secrets.SN_DEVOPS_USER }}
-          # Devops Integration User Password
-          #  devops-integration-user-password: ${{ secrets.SN_DEVOPS_PASSWORD }}
             devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
-          # ServiceNow Instance URL
             instance-url: ${{ secrets.SN_INSTANCE_URL }}
-          # Orchestration Tool Id
             tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
-          # Display Name of the Job
             job-name: ServiceNow DevOps Register Artifact
-          # Github Context
             context-github: ${{ toJSON(github) }}
-          # List of Artifacts to be registered
             artifacts: '[{"name": "githubActionsArtifact","version": "1.${{ github.run_number }}","semanticVersion": "1.${{ github.run_number }}.0","repositoryName": "${{ github.repository }}"}]'                      
