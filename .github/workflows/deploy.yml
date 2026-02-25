@@ -30,7 +30,6 @@ jobs:
     name: UAT PreDeploy
     runs-on: ubuntu-latest
     needs: register_package
-    environment: UAT
     steps:
       - name: ServiceNow DevOps Change Automation
         uses: ServiceNow/servicenow-devops-change@v6.1.0
@@ -40,8 +39,8 @@ jobs:
           tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
           job-name: 'UAT PreDeploy'
           context-github: ${{ toJSON(github) }}
-          change-request: '{"setCloseCode":"true","autoCloseChange":true,"attributes":{"short_description":"Automated Software Deployment","description":"Automated Software Deployment.","assignment_group":"a715cd759f2002002920bde8132e7018","implementation_plan":"Software update is tested and results can be found in Test Summaries Tab; When the change is approved the implementation happens automated by the CICD pipeline within the change planned start and end time window.","backout_plan":"When software fails in production, the previous software release will be re-deployed.","test_plan":"Testing if the software was successfully deployed"}}'
-          abortOnChangeCreationFailure: true
+          # change-request: '{"setCloseCode":"true","autoCloseChange":true,"attributes":{"short_description":"Automated Software Deployment","description":"Automated Software Deployment.","assignment_group":"a715cd759f2002002920bde8132e7018","implementation_plan":"Software update is tested and results can be found in Test Summaries Tab; When the change is approved the implementation happens automated by the CICD pipeline within the change planned start and end time window.","backout_plan":"When software fails in production, the previous software release will be re-deployed.","test_plan":"Testing if the software was successfully deployed"}}'
+          # abortOnChangeCreationFailure: true
           # deployment-gate: '{"environment":"UAT","jobName":"UAT Deploy"}'
 
   uat_deploy:
@@ -57,7 +56,6 @@ jobs:
     name: Prod PreDeploy
     runs-on: ubuntu-latest
     needs: uat_deploy
-    environment: Production
     steps:
       - name: ServiceNow DevOps Change Automation
         uses: ServiceNow/servicenow-devops-change@v6.1.0
@@ -67,8 +65,8 @@ jobs:
           tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
           job-name: 'Prod PreDeploy'
           context-github: ${{ toJSON(github) }}
-          change-request: '{"setCloseCode":"true","autoCloseChange":true,"attributes":{"short_description":"Automated Software Deployment","description":"Automated Software Deployment.","assignment_group":"a715cd759f2002002920bde8132e7018","implementation_plan":"Software update is tested and results can be found in Test Summaries Tab; When the change is approved the implementation happens automated by the CICD pipeline within the change planned start and end time window.","backout_plan":"When software fails in production, the previous software release will be re-deployed.","test_plan":"Testing if the software was successfully deployed"}}'
-          abortOnChangeCreationFailure: true
+          # change-request: '{"setCloseCode":"true","autoCloseChange":true,"attributes":{"short_description":"Automated Software Deployment","description":"Automated Software Deployment.","assignment_group":"a715cd759f2002002920bde8132e7018","implementation_plan":"Software update is tested and results can be found in Test Summaries Tab; When the change is approved the implementation happens automated by the CICD pipeline within the change planned start and end time window.","backout_plan":"When software fails in production, the previous software release will be re-deployed.","test_plan":"Testing if the software was successfully deployed"}}'
+          # abortOnChangeCreationFailure: true
           # deployment-gate: '{"environment":"Production","jobName":"Production Deploy"}'
           
   prod_deploy:
