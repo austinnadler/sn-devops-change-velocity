@@ -40,6 +40,7 @@ jobs:
           tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
           job-name: 'UAT PreDeploy'
           context-github: ${{ toJSON(github) }}
+          abortOnChangeCreationFailure: true
           deployment-gate: '{"environment":"UAT","jobName":"UAT Deploy"}'
 
   uat_deploy:
@@ -65,6 +66,7 @@ jobs:
           tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
           job-name: 'Prod PreDeploy'
           context-github: ${{ toJSON(github) }}
+          abortOnChangeCreationFailure: true
           deployment-gate: '{"environment":"Production","jobName":"Production Deplay"}'
           
   prod_deploy:
