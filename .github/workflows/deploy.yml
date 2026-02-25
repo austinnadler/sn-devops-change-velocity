@@ -63,7 +63,7 @@ jobs:
           
   prod_deploy:
     runs-on: ubuntu-latest
-    needs: uat_pre_deploy
+    needs: prod_pre_deploy
     steps:
       - name: Deploy me
         run: echo Deployed
