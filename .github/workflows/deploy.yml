@@ -1,8 +1,6 @@
 name: Deploy
 
-# Controls when the workflow will run
 on:
-  # Triggers the test workflow when the build workflow is run and completed
   workflow_run:
     workflows: ["Build"]
     branches: [main]
@@ -23,53 +21,53 @@ jobs:
           instance-url: ${{ secrets.SN_INSTANCE_URL }}
           tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
           context-github:  ${{ toJSON(github) }}
-          artifacts: '[{"name": "githubActionsArtifact","version": "1.${{ github.event.workflow_run.run_number }}","semanticVersion": "1.${{ github.event.workflow_run.run_number }}","repositoryName": "${{ github.repository }}"}]'                                # Name of the Package that contains list of artifacts
+          artifacts: '[{"name": "githubActionsArtifact","version": "1.${{ github.event.workflow_run.run_number }}","semanticVersion": "1.${{ github.event.workflow_run.run_number }}.0","repositoryName": "${{ github.repository }}"}]'                                # Name of the Package that contains list of artifacts
           package-name: 'sn-devops-change-velocity'
           job-name: 'Register Package'
 
-  uat_pre_deploy:
-    name: UAT PreDeploy
-    runs-on: ubuntu-latest
-    needs: register_package
-    steps:
-      - name: ServiceNow DevOps Change Automation
-        uses: ServiceNow/servicenow-devops-change@v6.1.0
-        with:
-          instance-url: ${{ secrets.SN_INSTANCE_URL }}
-          devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
-          tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
-          job-name: 'UAT PreDeploy'
-          context-github: ${{ toJSON(github) }}
-          deployment-gate: '{"environment":"UAT","jobName":"UAT Deploy"}'
+  # uat_pre_deploy:
+  #   name: UAT PreDeploy
+  #   runs-on: ubuntu-latest
+  #   needs: register_package
+  #   steps:
+  #     - name: ServiceNow DevOps Change Automation
+  #       uses: ServiceNow/servicenow-devops-change@v6.1.0
+  #       with:
+  #         instance-url: ${{ secrets.SN_INSTANCE_URL }}
+  #         devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
+  #         tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
+  #         job-name: 'UAT PreDeploy'
+  #         context-github: ${{ toJSON(github) }}
+  #         deployment-gate: '{"environment":"UAT","jobName":"UAT Deploy"}'
 
-  uat_deploy:
-    name: UAT Deploy
-    runs-on: ubuntu-latest
-    needs: uat_pre_deploy
-    steps:
-      - name: Deploy me
-        run: echo Deployed
+  # uat_deploy:
+  #   name: UAT Deploy
+  #   runs-on: ubuntu-latest
+  #   needs: uat_pre_deploy
+  #   steps:
+  #     - name: Deploy me
+  #       run: echo Deployed
 
-  prod_pre_deploy:
-    name: Prod PreDeploy
-    runs-on: ubuntu-latest
-    needs: uat_deploy
-    steps:
-      - name: ServiceNow DevOps Change Automation
-        uses: ServiceNow/servicenow-devops-change@v6.1.0
-        with:
-          instance-url: ${{ secrets.SN_INSTANCE_URL }}
-          devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
-          tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
-          job-name: 'Prod PreDeploy'
-          context-github: ${{ toJSON(github) }}
-          deployment-gate: '{"environment":"Production","jobName":"Production Deplay"}'
+  # prod_pre_deploy:
+  #   name: Prod PreDeploy
+  #   runs-on: ubuntu-latest
+  #   needs: uat_deploy
+  #   steps:
+  #     - name: ServiceNow DevOps Change Automation
+  #       uses: ServiceNow/servicenow-devops-change@v6.1.0
+  #       with:
+  #         instance-url: ${{ secrets.SN_INSTANCE_URL }}
+  #         devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
+  #         tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
+  #         job-name: 'Prod PreDeploy'
+  #         context-github: ${{ toJSON(github) }}
+  #         deployment-gate: '{"environment":"Production","jobName":"Production Deplay"}'
           
-  prod_deploy:
-    name: Production Deploy
-    runs-on: ubuntu-latest
-    needs: prod_pre_deploy
-    steps:
-      - name: Deploy me
-        run: echo Deployed
+  # prod_deploy:
+  #   name: Production Deploy
+  #   runs-on: ubuntu-latest
+  #   needs: prod_pre_deploy
+  #   steps:
+  #     - name: Deploy me
+  #       run: echo Deployed
           
