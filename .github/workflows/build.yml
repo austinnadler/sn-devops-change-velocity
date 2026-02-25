@@ -25,4 +25,4 @@ jobs:
             tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
             job-name: 'Build'
             context-github: ${{ toJSON(github) }}
-            artifacts: '[{"name": "githubActionsArtifact","version": "1.${{ github.run_number }}","semanticVersion": "1.${{ github.run_number }}","repositoryName": "${{ github.repository }}"}]'                      
+            artifacts: '[{"name": "githubActionsArtifact","version": "1.${{ github.run_number }}","semanticVersion": "1.${{ github.run_number }}.0","repositoryName": "${{ github.repository }}"}]'                      
