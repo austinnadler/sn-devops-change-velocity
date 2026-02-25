@@ -22,8 +22,8 @@ jobs:
           instance-url: ${{ secrets.SN_INSTANCE_URL }}
           tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
           context-github:  ${{ toJSON(github) }}
-          artifacts: '[{"name": "githubActionsArtifact","version": "1.${{ github.event.workflow_run.run_number }}","semanticVersion": "1.${{ github.event.workflow_run.run_number }}.0","repositoryName": "${{ github.repository }}"}]'                                # Name of the Package that contains list of artifacts
-          package-name: 'sn-devops-change-velocity'
+          artifacts: '[{"name": "sn-devops-change-velocity-art","version": "1.${{ github.event.workflow_run.run_number }}","semanticVersion": "1.${{ github.event.workflow_run.run_number }}.0","repositoryName": "${{ github.repository }}"}]'                                # Name of the Package that contains list of artifacts
+          package-name: 'sn-devops-change-velocity-pkg'
           job-name: 'Register Package'
 
   uat_pre_deploy:
