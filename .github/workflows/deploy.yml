@@ -12,12 +12,10 @@ on:
   workflow_dispatch:
 
 jobs:
-  uat_deploy:
+  register_package:
     runs-on: ubuntu-latest
     steps:
       - name: ServiceNow DevOps Register Package
-        # You may pin to the exact commit or the version.
-        # uses: ServiceNow/servicenow-devops-register-package@b57ff682c34c9089fbcbaacfaf2f8eab1652be79
         uses: ServiceNow/servicenow-devops-register-package@v5.1.0
         with:
           devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
@@ -25,6 +23,48 @@ jobs:
           tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
           context-github:  ${{ toJSON(github) }}
           artifacts: '[{"name": "githubActionsArtifact","version": "1.${{ github.event.workflow_run.run_number }}","semanticVersion": "1.${{ github.event.workflow_run.run_number }}","repositoryName": "${{ github.repository }}"}]'                                # Name of the Package that contains list of artifacts
-          package-name: 'sn-devops-change-velocity'
+          package-name: ${{ github.job }}
           job-name: 'ServiceNow DevOps Register Package'
+
+  uat_pre_deploy:
+    runs-on: ubuntu-latest
+    needs: register_package
+    steps:
+      - name: ServiceNow DevOps Change Automation
+        uses: ServiceNow/servicenow-devops-change@v6.1.0
+        with:
+          instance-url: ${{ secrets.SN_INSTANCE_URL }}
+          devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
+          tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
+          job-name: ${{ github.job }}
+          context-github: ${{ toJSON(github) }}
+          deployment-gate: '{"environment":"UAT","jobName":"UAT Deplay Gate"}'
+
+  uat_deploy:
+    runs-on: ubuntu-latest
+    needs: uat_pre_deploy
+    steps:
+      - name: Deploy me
+        run: echo Deployed
+
+  prod_pre_deploy:
+    runs-on: ubuntu-latest
+    needs: register_package
+    steps:
+      - name: ServiceNow DevOps Change Automation
+        uses: ServiceNow/servicenow-devops-change@v6.1.0
+        with:
+          instance-url: ${{ secrets.SN_INSTANCE_URL }}
+          devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
+          tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
+          job-name: ${{ github.job }}
+          context-github: ${{ toJSON(github) }}
+          deployment-gate: '{"environment":"Production","jobName":"Production Deplay Gate"}'
+          
+  prod_deploy:
+    runs-on: ubuntu-latest
+    needs: uat_pre_deploy
+    steps:
+      - name: Deploy me
+        run: echo Deployed
           
