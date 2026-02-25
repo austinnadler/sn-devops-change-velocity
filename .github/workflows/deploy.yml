@@ -1,0 +1,30 @@
+name: Deploy
+
+# Controls when the workflow will run
+on:
+  # Triggers the test workflow when the build workflow is run and completed
+  workflow_run:
+    workflows: ["Build"]
+    branches: [main]
+    types: 
+      - completed
+
+  workflow_dispatch:
+
+jobs:
+  uat_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: ServiceNow DevOps Register Package
+        # You may pin to the exact commit or the version.
+        # uses: ServiceNow/servicenow-devops-register-package@b57ff682c34c9089fbcbaacfaf2f8eab1652be79
+        uses: ServiceNow/servicenow-devops-register-package@v5.1.0
+        with:
+          devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
+          instance-url: ${{ secrets.SN_INSTANCE_URL }}
+          tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
+          context-github:  ${{ toJSON(github) }}
+          artifacts: '[{"name": "githubActionsArtifact","version": "1.${{ github.event.workflow_run.run_number }}","semanticVersion": "1.${{ github.event.workflow_run.run_number }}","repositoryName": "${{ github.repository }}"}]'                                # Name of the Package that contains list of artifacts
+          package-name: 'sn-devops-change-velocity'
+          job-name: 'ServiceNow DevOps Register Package'
+          
