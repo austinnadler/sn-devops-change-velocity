@@ -1,8 +1,12 @@
 name: Build
 
 on:
+  # Run any time a commit is pushed to certain branches
   push:
     branches: [ "main" ]
+
+  # Allow you to run the workflow manually from Actions
+  workflow_dispatch:
 
 jobs:
   build:
@@ -16,9 +20,10 @@ jobs:
         uses: ServiceNow/servicenow-devops-register-artifact@v5.1.0
         with:
           # Devops Integration User Name
-            devops-integration-user-name: ${{ secrets.SN_DEVOPS_USER }}
+          #  devops-integration-user-name: ${{ secrets.SN_DEVOPS_USER }}
           # Devops Integration User Password
-            devops-integration-user-password: ${{ secrets.SN_DEVOPS_PASSWORD }}
+          #  devops-integration-user-password: ${{ secrets.SN_DEVOPS_PASSWORD }}
+            devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
           # ServiceNow Instance URL
             instance-url: ${{ secrets.SN_INSTANCE_URL }}
           # Orchestration Tool Id
@@ -28,4 +33,4 @@ jobs:
           # Github Context
             context-github: ${{ toJSON(github) }}
           # List of Artifacts to be registered
-            artifacts: '[{"name": "githubActionsArtifact","version": "1.${{ github.run_number }}","semanticVersion": "1.${{ github.run_number }}.0","repositoryName": "${{ github.repository }}"}]'            
+            artifacts: '[{"name": "githubActionsArtifact","version": "1.${{ github.run_number }}","semanticVersion": "1.${{ github.run_number }}.0","repositoryName": "${{ github.repository }}"}]'                      
