@@ -40,9 +40,10 @@ jobs:
           tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
           job-name: 'UAT PreDeploy'
           context-github: ${{ toJSON(github) }}
-          deployment-gate: '{"environment":"UAT","jobName":"UAT Deplay Gate"}'
+          deployment-gate: '{"environment":"UAT","jobName":"UAT Deploy"}'
 
   uat_deploy:
+    name: UAT Deploy
     runs-on: ubuntu-latest
     needs: uat_pre_deploy
     steps:
@@ -62,9 +63,10 @@ jobs:
           tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
           job-name: 'Prod PreDeploy'
           context-github: ${{ toJSON(github) }}
-          deployment-gate: '{"environment":"Production","jobName":"Production Deplay Gate"}'
+          deployment-gate: '{"environment":"Production","jobName":"Production Deplay"}'
           
   prod_deploy:
+    name: Production Deploy
     runs-on: ubuntu-latest
     needs: prod_pre_deploy
     steps:
