@@ -24,7 +24,7 @@ jobs:
           context-github:  ${{ toJSON(github) }}
           artifacts: '[{"name": "sn-devops-change-velocity-art","version": "1.${{ github.event.workflow_run.run_number }}","semanticVersion": "1.${{ github.event.workflow_run.run_number }}.0","repositoryName": "${{ github.repository }}"}]'                                # Name of the Package that contains list of artifacts
           package-name: 'sn-devops-change-velocity-pkg'
-          job-name: 'Register Package'
+          job-name: ${{ github.job }}
 
   uat_pre_deploy:
     name: UAT PreDeploy
@@ -37,7 +37,7 @@ jobs:
           instance-url: ${{ secrets.SN_INSTANCE_URL }}
           devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
           tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
-          job-name: 'UAT PreDeploy'
+          job-name: ${{ github.job }}
           context-github: ${{ toJSON(github) }}
           change-request: '{"setCloseCode":"true","autoCloseChange":true,"attributes":{"short_description":"Automated Software Deployment","description":"Automated Software Deployment.","assignment_group":"a715cd759f2002002920bde8132e7018","implementation_plan":"Software update is tested and results can be found in Test Summaries Tab; When the change is approved the implementation happens automated by the CICD pipeline within the change planned start and end time window.","backout_plan":"When software fails in production, the previous software release will be re-deployed.","test_plan":"Testing if the software was successfully deployed"}}'
           abortOnChangeCreationFailure: true
@@ -63,7 +63,7 @@ jobs:
           instance-url: ${{ secrets.SN_INSTANCE_URL }}
           devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
           tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
-          job-name: 'Prod PreDeploy'
+          job-name: ${{ github.job }}
           context-github: ${{ toJSON(github) }}
           change-request: '{"setCloseCode":"true","autoCloseChange":true,"attributes":{"short_description":"Automated Software Deployment","description":"Automated Software Deployment.","assignment_group":"a715cd759f2002002920bde8132e7018","implementation_plan":"Software update is tested and results can be found in Test Summaries Tab; When the change is approved the implementation happens automated by the CICD pipeline within the change planned start and end time window.","backout_plan":"When software fails in production, the previous software release will be re-deployed.","test_plan":"Testing if the software was successfully deployed"}}'
           abortOnChangeCreationFailure: true
