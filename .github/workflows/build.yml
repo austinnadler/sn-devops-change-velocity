@@ -4,8 +4,8 @@ on:
   # Run any time a commit is pushed to certain branches
   push:
     branches: [ "main" ]
-    tags:
-      - "*"
+    #tags:
+    #  - "*"
 
   # Allow you to run the workflow manually from Actions
   workflow_dispatch:
