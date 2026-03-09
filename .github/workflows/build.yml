@@ -28,3 +28,11 @@ jobs:
             job-name: 'Build'
             context-github: ${{ toJSON(github) }}
             artifacts: '[{"name": "sn-devops-change-velocity-art","version": "1.${{ github.run_number }}","semanticVersion": "1.${{ github.run_number }}.0","repositoryName": "${{ github.repository }}"}]'                      
+  deploy:
+    name: Trigger Deploy workflow
+    needs: build
+    uses: ./.github/workflows/deploy.yml
+    with:
+      run_number: ${{ github.run_number }}
+    secrets: inherit
+    
