@@ -34,5 +34,5 @@ jobs:
     uses: ./.github/workflows/deploy.yml
     with:
       run_number: ${{ github.run_number }}
-      secrets: inherit
+    secrets: inherit
     
