@@ -1,16 +1,11 @@
 name: Deploy
 
 on:
-  # workflow_run:
-    # workflows: ["Build"]
-    # branches: [main]
-    # types: 
-    #   - completed
   workflow_call:
     inputs:
       run_number: 
         required: true
-        type: number
+        type: string
 
   workflow_dispatch:
 
