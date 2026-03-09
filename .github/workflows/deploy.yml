@@ -1,7 +1,7 @@
 name: Deploy
 
 on:
-  workflow_run:
+  # workflow_run:
     # workflows: ["Build"]
     # branches: [main]
     # types: 
@@ -18,7 +18,7 @@ jobs:
   register_package:
     name: Register Package
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    # if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: ServiceNow DevOps Register Package
         uses: ServiceNow/servicenow-devops-register-package@v5.1.0
@@ -27,7 +27,7 @@ jobs:
           instance-url: ${{ secrets.SN_INSTANCE_URL }}
           tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
           context-github:  ${{ toJSON(github) }}
-          artifacts: '[{"name": "sn-devops-change-velocity-art","version": "1.${{ github.event.workflow_run.run_number }}","semanticVersion": "1.${{ github.event.workflow_run.run_number }}.0","repositoryName": "${{ github.repository }}"}]'                                # Name of the Package that contains list of artifacts
+          artifacts: '[{"name": "sn-devops-change-velocity-art","version": "1.${{ inputs.run_number }}","semanticVersion": "1.${{ inputs.run_number }}.0","repositoryName": "${{ github.repository }}"}]'
           package-name: 'sn-devops-change-velocity-pkg'
           job-name: 'Register Package'
 
