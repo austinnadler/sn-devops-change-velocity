@@ -1,39 +1,39 @@
-name: Build
+# name: Build
 
-on:
-  # Run any time a commit is pushed to certain branches
-  push:
-    branches: [ "main" ]
-    #tags:
-    #  - "*"
+# on:
+#   # Run any time a commit is pushed to certain branches
+#   push:
+#     branches: [ "main" ]
+#     #tags:
+#     #  - "*"
 
-  # Allow you to run the workflow manually from Actions
-  workflow_dispatch:
+#   # Allow you to run the workflow manually from Actions
+#   workflow_dispatch:
 
-jobs:
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    steps:
+# jobs:
+#   build:
+#     name: Build
+#     runs-on: ubuntu-latest
+#     steps:
     
-      - name: psuedo build
-        run: echo Build
+#       - name: psuedo build
+#         run: echo Build
 
-      - name: ServiceNow DevOps Register Artifact
-        uses: ServiceNow/servicenow-devops-register-artifact@v5.1.0
-        with:
-            devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
-            instance-url: ${{ secrets.SN_INSTANCE_URL }}
-            tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
-            job-name: 'Build'
-            context-github: ${{ toJSON(github) }}
-            artifacts: '[{"name": "sn-devops-change-velocity-art","version": "1.${{ github.run_number }}","semanticVersion": "1.${{ github.run_number }}.0","repositoryName": "${{ github.repository }}"}]'                      
-  deploy:
-    name: Trigger Deploy workflow
-    needs: build
-    uses: ./.github/workflows/deploy.yml
-    with:
-      run_number: "${{ github.run_number }}"
-      caller_context_github: ${{ toJSON(github) }}
-    secrets: inherit
+#       - name: ServiceNow DevOps Register Artifact
+#         uses: ServiceNow/servicenow-devops-register-artifact@v5.1.0
+#         with:
+#             devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
+#             instance-url: ${{ secrets.SN_INSTANCE_URL }}
+#             tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
+#             job-name: 'Build'
+#             context-github: ${{ toJSON(github) }}
+#             artifacts: '[{"name": "sn-devops-change-velocity-art","version": "1.${{ github.run_number }}","semanticVersion": "1.${{ github.run_number }}.0","repositoryName": "${{ github.repository }}"}]'                      
+#   deploy:
+#     name: Trigger Deploy workflow
+#     needs: build
+#     uses: ./.github/workflows/deploy.yml
+#     with:
+#       run_number: "${{ github.run_number }}"
+#       caller_context_github: ${{ toJSON(github) }}
+#     secrets: inherit
     
