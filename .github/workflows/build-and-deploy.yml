@@ -4,9 +4,9 @@
 # CI/CD pipeline integrated with ServiceNow DevOps Change Velocity.
 #
 #   Build ──► Deploy DEV ──► Deploy TEST ──► Register Package ──► ServiceNow Change ──► Deploy PROD
-#   (unit tests,  (smoke tests)  (smoke tests)   (package of the      (type-based Normal     (held by the
-#    register                                     registered artifact)  change + deployment    ServiceNow deployment
-#    artifact)                                                          gate)                  protection rule)
+#   (unit tests,  (change        (change         (package of the      (type-based Normal     (held by the
+#    register      receipt +      receipt +       registered artifact)  change + deployment    ServiceNow deployment
+#    artifact)     smoke tests)   smoke tests)                          gate)                  protection rule)
 #
 # ServiceNow DevOps rules this file follows (see docs/SETUP.md for sources):
 #   - Workflow `name` must match the file name (build-and-deploy).
@@ -70,7 +70,8 @@ jobs:
           if-no-files-found: warn
 
       - name: ServiceNow DevOps Unit Test Results
-        if: always() && env.SN_REPORT == 'true'
+        # Only report when Surefire actually produced results (skips compile/setup failures)
+        if: always() && env.SN_REPORT == 'true' && hashFiles('target/surefire-reports/*.xml') != ''
         uses: ServiceNow/servicenow-devops-test-report@v7.1.0
         with:
           devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
@@ -129,6 +130,31 @@ jobs:
           name: ${{ env.APP_NAME }}-${{ env.APP_VERSION }}
           path: dist
 
+      # Change receipt: step has Change receipt = true in ServiceNow, so the change is
+      # created with pipeline data and the action returns immediately (no pause).
+      - name: ServiceNow Change Receipt
+        uses: ServiceNow/servicenow-devops-change@v7.1.0
+        with:
+          devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
+          instance-url: ${{ secrets.SN_INSTANCE_URL }}
+          tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
+          context-github: ${{ toJSON(github) }}
+          job-name: 'Deploy DEV'
+          change-request: >-
+            {
+              "setCloseCode": "true",
+              "autoCloseChange": true,
+              "attributes": {
+                "short_description": "Deploy ${{ env.APP_NAME }} ${{ env.APP_VERSION }} to DEV",
+                "description": "Automated deployment of ${{ env.APP_NAME }} ${{ env.APP_VERSION }} to DEV from ${{ github.repository }} (run ${{ github.run_id }}, commit ${{ github.sha }})."
+              }
+            }
+          interval: '100'
+          timeout: '3600'
+          changeCreationTimeOut: '3600'
+          abortOnChangeCreationFailure: true
+          abortOnChangeStepTimeout: true
+
       # Simulated deployment: runs the jar on the runner. Replace with the real
       # deploy step (e.g. Azure Web App, Kubernetes, VM) for a customer pipeline.
       - name: Deploy to DEV
@@ -138,7 +164,7 @@ jobs:
         run: mvn -B -ntp test -Psmoke -Drevision=${{ env.APP_VERSION }} -Dsmoke.baseUrl=http://localhost:${{ env.APP_PORT }}
 
       - name: ServiceNow DevOps Unit Test Results
-        if: always()
+        if: always() && hashFiles('target/surefire-reports/*.xml') != ''
         uses: ServiceNow/servicenow-devops-test-report@v7.1.0
         with:
           devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
@@ -181,6 +207,31 @@ jobs:
           name: ${{ env.APP_NAME }}-${{ env.APP_VERSION }}
           path: dist
 
+      # Change receipt: step has Change receipt = true in ServiceNow, so the change is
+      # created with pipeline data and the action returns immediately (no pause).
+      - name: ServiceNow Change Receipt
+        uses: ServiceNow/servicenow-devops-change@v7.1.0
+        with:
+          devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
+          instance-url: ${{ secrets.SN_INSTANCE_URL }}
+          tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
+          context-github: ${{ toJSON(github) }}
+          job-name: 'Deploy TEST'
+          change-request: >-
+            {
+              "setCloseCode": "true",
+              "autoCloseChange": true,
+              "attributes": {
+                "short_description": "Deploy ${{ env.APP_NAME }} ${{ env.APP_VERSION }} to TEST",
+                "description": "Automated deployment of ${{ env.APP_NAME }} ${{ env.APP_VERSION }} to TEST from ${{ github.repository }} (run ${{ github.run_id }}, commit ${{ github.sha }})."
+              }
+            }
+          interval: '100'
+          timeout: '3600'
+          changeCreationTimeOut: '3600'
+          abortOnChangeCreationFailure: true
+          abortOnChangeStepTimeout: true
+
       - name: Deploy to TEST
         run: bash scripts/deploy-local.sh "dist/${APP_NAME}.jar" "${APP_PORT}" "${TARGET_ENV}"
 
@@ -188,7 +239,7 @@ jobs:
         run: mvn -B -ntp test -Psmoke -Drevision=${{ env.APP_VERSION }} -Dsmoke.baseUrl=http://localhost:${{ env.APP_PORT }}
 
       - name: ServiceNow DevOps Unit Test Results
-        if: always()
+        if: always() && hashFiles('target/surefire-reports/*.xml') != ''
         uses: ServiceNow/servicenow-devops-test-report@v7.1.0
         with:
           devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
@@ -249,10 +300,8 @@ jobs:
               "setCloseCode": "true",
               "autoCloseChange": true,
               "attributes": {
-                "type": "normal",
                 "short_description": "Deploy ${{ env.APP_NAME }} ${{ env.APP_VERSION }} to production",
                 "description": "Automated deployment of ${{ env.APP_NAME }} ${{ env.APP_VERSION }} from ${{ github.repository }} (run ${{ github.run_id }}, commit ${{ github.sha }}).",
-                "assignment_group": "${{ vars.SN_CHANGE_ASSIGNMENT_GROUP }}",
                 "implementation_plan": "Deployed automatically by GitHub Actions workflow build-and-deploy once the change is approved and reaches Implement.",
                 "backout_plan": "Re-run the workflow for the previous successful version to redeploy the prior release.",
                 "test_plan": "Unit tests run in Build; smoke tests run in DEV and TEST. Results are in the change's Test Summaries related list."
