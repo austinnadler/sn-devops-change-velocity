@@ -14,7 +14,7 @@ class GreetingServiceTest {
 
     @Test
     void greetsByName() {
-        assertThat(service.greet("RWJBH").message()).isEqualTo("Hello, RWJBH!");
+        assertThat(service.greet("RWJBH").message()).isEqualTo("Hello, Austin!");
     }
 
     @Test
