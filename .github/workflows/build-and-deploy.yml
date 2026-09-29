@@ -144,10 +144,7 @@ jobs:
             {
               "setCloseCode": "true",
               "autoCloseChange": true,
-              "attributes": {
-                "short_description": "Deploy ${{ env.APP_NAME }} ${{ env.APP_VERSION }} to DEV",
-                "description": "Automated deployment of ${{ env.APP_NAME }} ${{ env.APP_VERSION }} to DEV from ${{ github.repository }} (run ${{ github.run_id }}, commit ${{ github.sha }})."
-              }
+              "attributes": {}
             }
           interval: '100'
           timeout: '3600'
@@ -221,10 +218,7 @@ jobs:
             {
               "setCloseCode": "true",
               "autoCloseChange": true,
-              "attributes": {
-                "short_description": "Deploy ${{ env.APP_NAME }} ${{ env.APP_VERSION }} to TEST",
-                "description": "Automated deployment of ${{ env.APP_NAME }} ${{ env.APP_VERSION }} to TEST from ${{ github.repository }} (run ${{ github.run_id }}, commit ${{ github.sha }})."
-              }
+              "attributes": {}
             }
           interval: '100'
           timeout: '3600'
@@ -299,13 +293,7 @@ jobs:
             {
               "setCloseCode": "true",
               "autoCloseChange": true,
-              "attributes": {
-                "short_description": "Deploy ${{ env.APP_NAME }} ${{ env.APP_VERSION }} to production",
-                "description": "Automated deployment of ${{ env.APP_NAME }} ${{ env.APP_VERSION }} from ${{ github.repository }} (run ${{ github.run_id }}, commit ${{ github.sha }}).",
-                "implementation_plan": "Deployed automatically by GitHub Actions workflow build-and-deploy once the change is approved and reaches Implement.",
-                "backout_plan": "Re-run the workflow for the previous successful version to redeploy the prior release.",
-                "test_plan": "Unit tests run in Build; smoke tests run in DEV and TEST. Results are in the change's Test Summaries related list."
-              }
+              "attributes": {}
             }
           interval: '100'
           timeout: '3600'
