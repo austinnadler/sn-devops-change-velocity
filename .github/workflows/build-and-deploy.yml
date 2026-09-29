@@ -34,7 +34,7 @@ concurrency:
 env:
   JAVA_VERSION: '21'
   JAVA_DISTRIBUTION: temurin
-  APP_NAME: rwjbh-devops-demo
+  APP_NAME: austin-devops-demo
   APP_VERSION: 1.0.${{ github.run_number }}
   # ServiceNow reporting is skipped on pull requests (fork PRs can't read secrets, and
   # PR runs would add noise to the pipeline/DORA data). CI still runs on every PR.
