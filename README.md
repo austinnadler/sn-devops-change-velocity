@@ -1,4 +1,4 @@
-# rwjbh-devops-demo
+# austin-devops-demo
 
 Sample Spring Boot service used to demo **ServiceNow DevOps Change Velocity** with **GitHub Actions** — test results, artifacts, packages, and a change-gated production deployment.
 
@@ -12,9 +12,9 @@ Build ──► Deploy DEV ──► Deploy TEST ──► Register Package ─�
 
 | Job | What it sends to ServiceNow |
 |---|---|
-| Build | Unit test summary (JUnit), artifact version `rwjbh-devops-demo.jar` `1.0.<run>` |
+| Build | Unit test summary (JUnit), artifact version `austin-devops-demo.jar` `1.0.<run>` |
 | Deploy DEV / Deploy TEST | Smoke test summary per environment |
-| Register Package | Package `rwjbh-devops-demo-1.0.<run>` |
+| Register Package | Package `austin-devops-demo-1.0.<run>` |
 | ServiceNow Change | Type-based Normal change with deployment gate on `production` |
 | Deploy PROD | Released by the ServiceNow deployment protection rule |
 
@@ -24,7 +24,7 @@ Pull requests run **Build** only and skip ServiceNow reporting.
 
 ```bash
 mvn verify                                   # build + unit tests
-java -jar target/rwjbh-devops-demo.jar       # http://localhost:8080/api/greeting?name=RWJBH
+java -jar target/austin-devops-demo.jar       # http://localhost:8080/api/greeting?name=Austin
 mvn test -Psmoke -Dsmoke.baseUrl=http://localhost:8080
 ```
 

@@ -1,6 +1,6 @@
 spring:
   application:
-    name: rwjbh-devops-demo
+    name: austin-devops-demo
 
 server:
   port: ${PORT:8080}

@@ -53,11 +53,7 @@ Secrets (names match the ServiceNow docs):
 | `SN_ORCHESTRATION_TOOL_ID` | GitHub tool sys_id |
 | `SN_DEVOPS_INTEGRATION_TOKEN` | Token from the tool record |
 
-Variables:
-
-| Variable | Value |
-|---|---|
-| `SN_CHANGE_ASSIGNMENT_GROUP` | sys_id of the group the change should be assigned to (e.g. Change Management) |
+Change assignment group is set on the **ServiceNow Change** pipeline step record in ServiceNow, not passed from the workflow. (Precedence per the DevOps change models doc: record preset > value passed from the pipeline > Step form, so the pipeline must not send `assignment_group` or it would override the step.)
 
 ## 3a. Test results — no separate test tool needed
 
