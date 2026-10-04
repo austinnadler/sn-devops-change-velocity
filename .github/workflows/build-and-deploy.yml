@@ -102,84 +102,84 @@ jobs:
           artifacts: '[{"name": "${{ env.APP_NAME }}.jar", "version": "${{ env.APP_VERSION }}", "semanticVersion": "${{ env.APP_VERSION }}", "repositoryName": "${{ github.repository }}"}]'
 
   # -------------------------------------------------------------------------
-  deploy-dev:
-    name: Deploy DEV
-    needs: build
-    if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    environment:
-      name: development
-    env:
-      TARGET_ENV: dev
-      APP_PORT: '8080'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
+  # deploy-dev:
+  #   name: Deploy DEV
+  #   needs: build
+  #   if: github.event_name != 'pull_request'
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 15
+  #   environment:
+  #     name: development
+  #   env:
+  #     TARGET_ENV: dev
+  #     APP_PORT: '8080'
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v7
 
-      - name: Set up JDK ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v6
-        with:
-          distribution: ${{ env.JAVA_DISTRIBUTION }}
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: maven
+  #     - name: Set up JDK ${{ env.JAVA_VERSION }}
+  #       uses: actions/setup-java@v6
+  #       with:
+  #         distribution: ${{ env.JAVA_DISTRIBUTION }}
+  #         java-version: ${{ env.JAVA_VERSION }}
+  #         cache: maven
 
-      - name: Download application artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: ${{ env.APP_NAME }}-${{ env.APP_VERSION }}
-          path: dist
+  #     - name: Download application artifact
+  #       uses: actions/download-artifact@v8
+  #       with:
+  #         name: ${{ env.APP_NAME }}-${{ env.APP_VERSION }}
+  #         path: dist
 
-      # Change receipt: step has Change receipt = true in ServiceNow, so the change is
-      # created with pipeline data and the action returns immediately (no pause).
-      - name: ServiceNow Change Receipt
-        uses: ServiceNow/servicenow-devops-change@v7.1.0
-        with:
-          devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
-          instance-url: ${{ secrets.SN_INSTANCE_URL }}
-          tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
-          context-github: ${{ toJSON(github) }}
-          job-name: 'Deploy DEV'
-          change-request: >-
-            {
-              "setCloseCode": "true",
-              "autoCloseChange": true,
-              "attributes": {}
-            }
-          interval: '100'
-          timeout: '3600'
-          changeCreationTimeOut: '3600'
-          abortOnChangeCreationFailure: true
-          abortOnChangeStepTimeout: true
+  #     # Change receipt: step has Change receipt = true in ServiceNow, so the change is
+  #     # created with pipeline data and the action returns immediately (no pause).
+  #     - name: ServiceNow Change Receipt
+  #       uses: ServiceNow/servicenow-devops-change@v7.1.0
+  #       with:
+  #         devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
+  #         instance-url: ${{ secrets.SN_INSTANCE_URL }}
+  #         tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
+  #         context-github: ${{ toJSON(github) }}
+  #         job-name: 'Deploy DEV'
+  #         change-request: >-
+  #           {
+  #             "setCloseCode": "true",
+  #             "autoCloseChange": true,
+  #             "attributes": {}
+  #           }
+  #         interval: '100'
+  #         timeout: '3600'
+  #         changeCreationTimeOut: '3600'
+  #         abortOnChangeCreationFailure: true
+  #         abortOnChangeStepTimeout: true
 
-      # Simulated deployment: runs the jar on the runner. Replace with the real
-      # deploy step (e.g. Azure Web App, Kubernetes, VM) for a customer pipeline.
-      - name: Deploy to DEV
-        run: bash scripts/deploy-local.sh "dist/${APP_NAME}.jar" "${APP_PORT}" "${TARGET_ENV}"
+  #     # Simulated deployment: runs the jar on the runner. Replace with the real
+  #     # deploy step (e.g. Azure Web App, Kubernetes, VM) for a customer pipeline.
+  #     - name: Deploy to DEV
+  #       run: bash scripts/deploy-local.sh "dist/${APP_NAME}.jar" "${APP_PORT}" "${TARGET_ENV}"
 
-      - name: Run smoke tests against DEV
-        run: mvn -B -ntp test -Psmoke -Drevision=${{ env.APP_VERSION }} -Dsmoke.baseUrl=http://localhost:${{ env.APP_PORT }}
+  #     - name: Run smoke tests against DEV
+  #       run: mvn -B -ntp test -Psmoke -Drevision=${{ env.APP_VERSION }} -Dsmoke.baseUrl=http://localhost:${{ env.APP_PORT }}
 
-      - name: ServiceNow DevOps Unit Test Results
-        if: always() && hashFiles('target/surefire-reports/*.xml') != ''
-        uses: ServiceNow/servicenow-devops-test-report@v7.1.0
-        with:
-          devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
-          instance-url: ${{ secrets.SN_INSTANCE_URL }}
-          tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
-          context-github: ${{ toJSON(github) }}
-          job-name: 'Deploy DEV'
-          xml-report-filename: target/surefire-reports
-          test-summary-name: 'Smoke Tests DEV - ${{ env.APP_VERSION }}'
+  #     - name: ServiceNow DevOps Unit Test Results
+  #       if: always() && hashFiles('target/surefire-reports/*.xml') != ''
+  #       uses: ServiceNow/servicenow-devops-test-report@v7.1.0
+  #       with:
+  #         devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
+  #         instance-url: ${{ secrets.SN_INSTANCE_URL }}
+  #         tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
+  #         context-github: ${{ toJSON(github) }}
+  #         job-name: 'Deploy DEV'
+  #         xml-report-filename: target/surefire-reports
+  #         test-summary-name: 'Smoke Tests DEV - ${{ env.APP_VERSION }}'
 
-      - name: Stop application
-        if: always()
-        run: bash scripts/stop-local.sh
+  #     - name: Stop application
+  #       if: always()
+  #       run: bash scripts/stop-local.sh
 
   # -------------------------------------------------------------------------
   deploy-test:
     name: Deploy TEST
-    needs: deploy-dev
+    # needs: deploy-dev
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment:
