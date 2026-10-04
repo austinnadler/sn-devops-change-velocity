@@ -3,16 +3,17 @@
 #
 # CI/CD pipeline integrated with ServiceNow DevOps Change Velocity.
 #
-#   Build ──► Deploy DEV ──► Deploy TEST ──► Register Package ──► ServiceNow Change ──► Deploy PROD
-#   (unit tests,  (change        (change         (package of the      (type-based Normal     (held by the
-#    register      receipt +      receipt +       registered artifact)  change + deployment    ServiceNow deployment
-#    artifact)     smoke tests)   smoke tests)                          gate)                  protection rule)
+#   Build ──► Deploy TEST ──► Register Package ──► ServiceNow Change ──► Deploy PROD
+#   (unit tests,  (change         (package of the      (type-based Normal     (held by the
+#    register      receipt +       registered artifact)  change + deployment    ServiceNow deployment
+#    artifact)     smoke tests)                          gate)                  protection rule)
 #
 # ServiceNow DevOps rules this file follows (see docs/SETUP.md for sources):
 #   - Workflow `name` must match the file name (build-and-deploy).
 #   - Every job has a unique display `name`; each ServiceNow action's `job-name` must equal it.
 #   - Jobs run sequentially: DevOps change automation is not supported for parallel jobs.
 #   - Package registration runs in a job BEFORE the change job.
+#   - setCloseCode / autoCloseChange are booleans, not strings (KB3119171).
 # ---------------------------------------------------------------------------
 name: build-and-deploy
 
@@ -102,84 +103,11 @@ jobs:
           artifacts: '[{"name": "${{ env.APP_NAME }}.jar", "version": "${{ env.APP_VERSION }}", "semanticVersion": "${{ env.APP_VERSION }}", "repositoryName": "${{ github.repository }}"}]'
 
   # -------------------------------------------------------------------------
-  # deploy-dev:
-  #   name: Deploy DEV
-  #   needs: build
-  #   if: github.event_name != 'pull_request'
-  #   runs-on: ubuntu-latest
-  #   timeout-minutes: 15
-  #   environment:
-  #     name: development
-  #   env:
-  #     TARGET_ENV: dev
-  #     APP_PORT: '8080'
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v7
-
-  #     - name: Set up JDK ${{ env.JAVA_VERSION }}
-  #       uses: actions/setup-java@v6
-  #       with:
-  #         distribution: ${{ env.JAVA_DISTRIBUTION }}
-  #         java-version: ${{ env.JAVA_VERSION }}
-  #         cache: maven
-
-  #     - name: Download application artifact
-  #       uses: actions/download-artifact@v8
-  #       with:
-  #         name: ${{ env.APP_NAME }}-${{ env.APP_VERSION }}
-  #         path: dist
-
-  #     # Change receipt: step has Change receipt = true in ServiceNow, so the change is
-  #     # created with pipeline data and the action returns immediately (no pause).
-  #     - name: ServiceNow Change Receipt
-  #       uses: ServiceNow/servicenow-devops-change@v7.1.0
-  #       with:
-  #         devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
-  #         instance-url: ${{ secrets.SN_INSTANCE_URL }}
-  #         tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
-  #         context-github: ${{ toJSON(github) }}
-  #         job-name: 'Deploy DEV'
-  #         change-request: >-
-  #           {
-  #             "setCloseCode": "true",
-  #             "autoCloseChange": true,
-  #             "attributes": {}
-  #           }
-  #         interval: '100'
-  #         timeout: '3600'
-  #         changeCreationTimeOut: '3600'
-  #         abortOnChangeCreationFailure: true
-  #         abortOnChangeStepTimeout: true
-
-  #     # Simulated deployment: runs the jar on the runner. Replace with the real
-  #     # deploy step (e.g. Azure Web App, Kubernetes, VM) for a customer pipeline.
-  #     - name: Deploy to DEV
-  #       run: bash scripts/deploy-local.sh "dist/${APP_NAME}.jar" "${APP_PORT}" "${TARGET_ENV}"
-
-  #     - name: Run smoke tests against DEV
-  #       run: mvn -B -ntp test -Psmoke -Drevision=${{ env.APP_VERSION }} -Dsmoke.baseUrl=http://localhost:${{ env.APP_PORT }}
-
-  #     - name: ServiceNow DevOps Unit Test Results
-  #       if: always() && hashFiles('target/surefire-reports/*.xml') != ''
-  #       uses: ServiceNow/servicenow-devops-test-report@v7.1.0
-  #       with:
-  #         devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
-  #         instance-url: ${{ secrets.SN_INSTANCE_URL }}
-  #         tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
-  #         context-github: ${{ toJSON(github) }}
-  #         job-name: 'Deploy DEV'
-  #         xml-report-filename: target/surefire-reports
-  #         test-summary-name: 'Smoke Tests DEV - ${{ env.APP_VERSION }}'
-
-  #     - name: Stop application
-  #       if: always()
-  #       run: bash scripts/stop-local.sh
-
-  # -------------------------------------------------------------------------
   deploy-test:
     name: Deploy TEST
-    # needs: deploy-dev
+    needs: build
+    # Deployments only run on main/dispatch; PRs stop after Build.
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment:
@@ -205,7 +133,7 @@ jobs:
           path: dist
 
       # Change receipt: step has Change receipt = true in ServiceNow, so the change is
-      # created with pipeline data and the action returns immediately (no pause).
+      # created with pipeline data and the action returns after one poll (no approval).
       - name: ServiceNow Change Receipt
         uses: ServiceNow/servicenow-devops-change@v7.1.0
         with:
@@ -216,7 +144,7 @@ jobs:
           job-name: 'Deploy TEST'
           change-request: >-
             {
-              "setCloseCode": "true",
+              "setCloseCode": true,
               "autoCloseChange": true,
               "attributes": {}
             }
@@ -226,6 +154,8 @@ jobs:
           abortOnChangeCreationFailure: true
           abortOnChangeStepTimeout: true
 
+      # Simulated deployment: runs the jar on the runner. Replace with the real
+      # deploy step (e.g. Azure Web App, Kubernetes, VM) for a customer pipeline.
       - name: Deploy to TEST
         run: bash scripts/deploy-local.sh "dist/${APP_NAME}.jar" "${APP_PORT}" "${TARGET_ENV}"
 
@@ -291,7 +221,7 @@ jobs:
           job-name: 'ServiceNow Change'
           change-request: >-
             {
-              "setCloseCode": "true",
+              "setCloseCode": true,
               "autoCloseChange": true,
               "attributes": {}
             }
