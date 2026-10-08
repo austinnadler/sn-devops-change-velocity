@@ -1,78 +1,59 @@
 # ---------------------------------------------------------------------------
-# build-and-deploy
+# Minimal GitHub Actions pipeline for ServiceNow DevOps Change Velocity.
 #
-# CI/CD pipeline integrated with ServiceNow DevOps Change Velocity.
+#   Build ──► ServiceNow Change ──► Deploy PROD
 #
-#   Build ──► Deploy TEST ──► Register Package ──► ServiceNow Change ──► Deploy PROD
-#   (unit tests,  (change         (package of the      (type-based Normal     (held by the
-#    register      receipt +       registered artifact)  change + deployment    ServiceNow deployment
-#    artifact)     smoke tests)                          gate)                  protection rule)
+# Shows the 5 integration points: test results, artifact, package, change, gated deploy.
+# Build/test/deploy commands are placeholders. Replace them with your real steps.
 #
-# ServiceNow DevOps rules this file follows (see docs/SETUP.md for sources):
-#   - Workflow `name` must match the file name (build-and-deploy).
-#   - Every job has a unique display `name`; each ServiceNow action's `job-name` must equal it.
-#   - Jobs run sequentially: DevOps change automation is not supported for parallel jobs.
-#   - Package registration runs in a job BEFORE the change job.
-#   - setCloseCode / autoCloseChange are booleans, not strings (KB3119171).
+# Prerequisites
+#   GitHub repo secrets:
+#     SN_INSTANCE_URL              https://<instance>.service-now.com
+#     SN_ORCHESTRATION_TOOL_ID     sys_id of the GitHub tool in ServiceNow
+#     SN_DEVOPS_INTEGRATION_TOKEN  token from the GitHub tool record (Copy token)
+#   GitHub environment "production" with the ServiceNow GitHub App selected
+#   under Deployment protection rules.
+#   ServiceNow: "Deploy PROD" pipeline step has Change control enabled.
+#
+# Rules
+#   - Workflow `name` must match the file name.
+#   - Each ServiceNow action's `job-name` must equal its job's display `name`.
+#   - Register the package in a job BEFORE the change job.
+#   - setCloseCode / autoCloseChange must be booleans, not strings.
 # ---------------------------------------------------------------------------
 name: build-and-deploy
 
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: read
-
-concurrency:
-  # PRs: cancel superseded runs. main: queue deployments, never cancel one mid-flight.
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
 env:
-  JAVA_VERSION: '21'
-  JAVA_DISTRIBUTION: temurin
-  APP_NAME: austin-devops-demo
+  APP_NAME: sample-app
   APP_VERSION: 1.0.${{ github.run_number }}
-  # ServiceNow reporting is skipped on pull requests (fork PRs can't read secrets, and
-  # PR runs would add noise to the pipeline/DORA data). CI still runs on every PR.
-  SN_REPORT: ${{ github.event_name != 'pull_request' }}
 
 jobs:
-  # -------------------------------------------------------------------------
   build:
     name: Build
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
+      # Placeholder: replace with your build + test (e.g. mvn verify). Surefire
+      # writes JUnit XML to target/surefire-reports; TestNG writes
+      # target/surefire-reports/testng-results.xml.
+      - name: Build and test (placeholder results)
+        run: |
+          mkdir -p test-results
+          cat > test-results/unit-tests.xml <<'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <testsuite name="UnitTests" tests="3" failures="0" errors="0" skipped="0" time="0.5">
+            <testcase classname="SampleTest" name="test1" time="0.1"/>
+            <testcase classname="SampleTest" name="test2" time="0.2"/>
+            <testcase classname="SampleTest" name="test3" time="0.2"/>
+          </testsuite>
+          EOF
 
-      - name: Set up JDK ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v6
-        with:
-          distribution: ${{ env.JAVA_DISTRIBUTION }}
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: maven
-
-      - name: Build and run unit tests
-        run: mvn -B -ntp verify -Drevision=${{ env.APP_VERSION }}
-
-      - name: Upload unit test reports
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: unit-test-reports
-          path: target/surefire-reports/
-          retention-days: 14
-          if-no-files-found: warn
-
+      # 1. Test results (JUnit XML file or directory, or a TestNG results file)
       - name: ServiceNow DevOps Unit Test Results
-        # Only report when Surefire actually produced results (skips compile/setup failures)
-        if: always() && env.SN_REPORT == 'true' && hashFiles('target/surefire-reports/*.xml') != ''
         uses: ServiceNow/servicenow-devops-test-report@v7.1.0
         with:
           devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
@@ -80,19 +61,10 @@ jobs:
           tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
           context-github: ${{ toJSON(github) }}
           job-name: 'Build'
-          xml-report-filename: target/surefire-reports
-          test-summary-name: 'Unit Tests - ${{ env.APP_VERSION }}'
+          xml-report-filename: test-results/unit-tests.xml
 
-      - name: Upload application artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: ${{ env.APP_NAME }}-${{ env.APP_VERSION }}
-          path: target/${{ env.APP_NAME }}.jar
-          retention-days: 30
-          if-no-files-found: error
-
+      # 2. Artifact version produced by this build
       - name: ServiceNow Register Artifact
-        if: env.SN_REPORT == 'true'
         uses: ServiceNow/servicenow-devops-register-artifact@v7.1.0
         with:
           devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
@@ -100,93 +72,9 @@ jobs:
           tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
           context-github: ${{ toJSON(github) }}
           job-name: 'Build'
-          artifacts: '[{"name": "${{ env.APP_NAME }}.jar", "version": "${{ env.APP_VERSION }}", "semanticVersion": "${{ env.APP_VERSION }}", "repositoryName": "${{ github.repository }}"}]'
+          artifacts: '[{"name": "${{ env.APP_NAME }}", "version": "${{ env.APP_VERSION }}", "semanticVersion": "${{ env.APP_VERSION }}", "repositoryName": "${{ github.repository }}"}]'
 
-  # -------------------------------------------------------------------------
-  deploy-test:
-    name: Deploy TEST
-    needs: build
-    # Deployments only run on main/dispatch; PRs stop after Build.
-    if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    environment:
-      name: test
-    env:
-      TARGET_ENV: test
-      APP_PORT: '8080'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Set up JDK ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v6
-        with:
-          distribution: ${{ env.JAVA_DISTRIBUTION }}
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: maven
-
-      - name: Download application artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: ${{ env.APP_NAME }}-${{ env.APP_VERSION }}
-          path: dist
-
-      # Change receipt: step has Change receipt = true in ServiceNow, so the change is
-      # created with pipeline data and the action returns after one poll (no approval).
-      - name: ServiceNow Change Receipt
-        uses: ServiceNow/servicenow-devops-change@v7.1.0
-        with:
-          devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
-          instance-url: ${{ secrets.SN_INSTANCE_URL }}
-          tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
-          context-github: ${{ toJSON(github) }}
-          job-name: 'Deploy TEST'
-          change-request: >-
-            {
-              "setCloseCode": true,
-              "autoCloseChange": true,
-              "attributes": {}
-            }
-          interval: '100'
-          timeout: '3600'
-          changeCreationTimeOut: '3600'
-          abortOnChangeCreationFailure: true
-          abortOnChangeStepTimeout: true
-
-      # Simulated deployment: runs the jar on the runner. Replace with the real
-      # deploy step (e.g. Azure Web App, Kubernetes, VM) for a customer pipeline.
-      - name: Deploy to TEST
-        run: bash scripts/deploy-local.sh "dist/${APP_NAME}.jar" "${APP_PORT}" "${TARGET_ENV}"
-
-      - name: Run smoke tests against TEST
-        run: mvn -B -ntp test -Psmoke -Drevision=${{ env.APP_VERSION }} -Dsmoke.baseUrl=http://localhost:${{ env.APP_PORT }}
-
-      - name: ServiceNow DevOps Unit Test Results
-        if: always() && hashFiles('target/surefire-reports/*.xml') != ''
-        uses: ServiceNow/servicenow-devops-test-report@v7.1.0
-        with:
-          devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
-          instance-url: ${{ secrets.SN_INSTANCE_URL }}
-          tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
-          context-github: ${{ toJSON(github) }}
-          job-name: 'Deploy TEST'
-          xml-report-filename: target/surefire-reports
-          test-summary-name: 'Smoke Tests TEST - ${{ env.APP_VERSION }}'
-
-      - name: Stop application
-        if: always()
-        run: bash scripts/stop-local.sh
-
-  # -------------------------------------------------------------------------
-  # Must be in a job before the change job so the package links to the
-  # pipeline execution the change request is created for.
-  register-package:
-    name: Register Package
-    needs: deploy-test
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
+      # 3. Package = the artifact version(s) being released
       - name: ServiceNow Register Package
         uses: ServiceNow/servicenow-devops-register-package@v7.1.0
         with:
@@ -194,24 +82,18 @@ jobs:
           instance-url: ${{ secrets.SN_INSTANCE_URL }}
           tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
           context-github: ${{ toJSON(github) }}
-          job-name: 'Register Package'
-          artifacts: '[{"name": "${{ env.APP_NAME }}.jar", "version": "${{ env.APP_VERSION }}", "semanticVersion": "${{ env.APP_VERSION }}", "repositoryName": "${{ github.repository }}"}]'
+          job-name: 'Build'
+          artifacts: '[{"name": "${{ env.APP_NAME }}", "version": "${{ env.APP_VERSION }}", "semanticVersion": "${{ env.APP_VERSION }}", "repositoryName": "${{ github.repository }}"}]'
           package-name: '${{ env.APP_NAME }}-${{ env.APP_VERSION }}'
 
-  # -------------------------------------------------------------------------
-  # Creates a type-based (Normal) change. With deployment-gate set, this step
-  # does not poll; the "production" environment's ServiceNow deployment
-  # protection rule holds "Deploy PROD" until the change reaches Implement.
+  # 4. Registers the deployment gate. The change request is created when
+  #    "Deploy PROD" hits the production environment's protection rule.
   change:
     name: ServiceNow Change
-    needs: register-package
+    needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    outputs:
-      change-request-number: ${{ steps.create.outputs.change-request-number }}
     steps:
       - name: ServiceNow Change
-        id: create
         uses: ServiceNow/servicenow-devops-change@v7.1.0
         with:
           devops-integration-token: ${{ secrets.SN_DEVOPS_INTEGRATION_TOKEN }}
@@ -219,67 +101,15 @@ jobs:
           tool-id: ${{ secrets.SN_ORCHESTRATION_TOOL_ID }}
           context-github: ${{ toJSON(github) }}
           job-name: 'ServiceNow Change'
-          change-request: >-
-            {
-              "setCloseCode": true,
-              "autoCloseChange": true,
-              "attributes": {}
-            }
-          interval: '100'
-          timeout: '3600'
-          changeCreationTimeOut: '3600'
-          abortOnChangeCreationFailure: true
-          abortOnChangeStepTimeout: true
+          change-request: '{"setCloseCode": true, "autoCloseChange": true, "attributes": {}}'
           deployment-gate: '{"environment": "production", "jobName": "Deploy PROD"}'
 
-  # -------------------------------------------------------------------------
+  # 5. Held by ServiceNow until the change reaches Implement.
   deploy-prod:
     name: Deploy PROD
     needs: change
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    environment:
-      name: production
-    env:
-      TARGET_ENV: prod
-      APP_PORT: '8080'
+    environment: production
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Set up JDK ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v6
-        with:
-          distribution: ${{ env.JAVA_DISTRIBUTION }}
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: maven
-
-      - name: Download application artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: ${{ env.APP_NAME }}-${{ env.APP_VERSION }}
-          path: dist
-
-      - name: Deploy to PROD
-        run: bash scripts/deploy-local.sh "dist/${APP_NAME}.jar" "${APP_PORT}" "${TARGET_ENV}"
-
-      - name: Post-deployment verification
-        run: mvn -B -ntp test -Psmoke -Drevision=${{ env.APP_VERSION }} -Dsmoke.baseUrl=http://localhost:${{ env.APP_PORT }}
-
-      - name: Stop application
-        if: always()
-        run: bash scripts/stop-local.sh
-
-      - name: Deployment summary
-        if: always()
-        run: |
-          {
-            echo "### ${APP_NAME} ${APP_VERSION} → production"
-            echo ""
-            echo "| Item | Value |"
-            echo "|---|---|"
-            echo "| Change request | ${{ needs.change.outputs.change-request-number }} |"
-            echo "| Commit | \`${GITHUB_SHA}\` |"
-            echo "| Package | ${APP_NAME}-${APP_VERSION} |"
-            echo "| Job status | ${{ job.status }} |"
-          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Deploy (placeholder)
+        run: echo "Deploying ${APP_NAME} ${APP_VERSION} to production"
